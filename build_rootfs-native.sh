@@ -206,9 +206,13 @@ docker buildx build \
   -f "$DOCKERFILE" \
   .
 
-
-
-
+echo "正在写入主机名与 hosts 配置..."
+HOST_CONFIG_DIR="$(mktemp -d)"
+mkdir -p "$HOST_CONFIG_DIR/etc"
+echo "${HOSTNAME:-onyx}" > "$HOST_CONFIG_DIR/etc/hostname"
+printf '127.0.0.1 localhost\n127.0.1.1 %s\n::1 localhost ip6-localhost ip6-loopback\n' "${HOSTNAME:-onyx}" > "$HOST_CONFIG_DIR/etc/hosts"
+tar --owner=0 --group=0 --numeric-owner -rf "$TEMP_TAR" -C "$HOST_CONFIG_DIR" etc/hostname etc/hosts
+rm -rf "$HOST_CONFIG_DIR"
 
 echo "正在写入推荐配置并压缩构建产物..."
 package_rootfs_with_config "$TEMP_TAR" "$FINAL_NAME" "$DESKTOP" "$DISPLAY_BACKEND" \

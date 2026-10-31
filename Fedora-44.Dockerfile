@@ -132,10 +132,6 @@ RUN if [ "$ENABLE_zh_tz_ARG" = "true" ]; then \
     useradd -m -s /bin/bash ${USERNAME} && \
     ( [ -n "$USER_PASSWORD" ] && printf '%s:%s\n' "${USERNAME}" "${USER_PASSWORD}" | chpasswd || echo "${USERNAME}:1234" | chpasswd )
 
-# 设置设备主机名
-RUN echo "${HOSTNAME:-onyx}" > /etc/hostname && \
-    printf '127.0.0.1 localhost\n127.0.1.1 %s\n::1 localhost ip6-localhost ip6-loopback\n' "${HOSTNAME:-onyx}" > /etc/hosts
-
 # 为所有 Fedora RootFS 安装 Droidspaces USB Manager
 RUN /usr/local/sbin/install-droidspaces-usb-manager --user "${USERNAME}"
 
