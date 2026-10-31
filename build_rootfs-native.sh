@@ -13,7 +13,7 @@ ENABLE_8gen2_wayland="false"
 ENABLE_systemd257="false"
 DISPLAY_BACKEND_INPUT="X11"
 # 解析输入参数 (-i 指定 Dockerfile，-v 指定版本号)
-while getopts "i:v:K:L:B:P:a:b:c:d:e:f:g:h:n:S:t:u:A:" opt; do
+while getopts "i:v:K:L:B:P:a:b:c:d:e:f:g:h:n:S:t:u:H:p:A:" opt; do
   case $opt in
     i) DOCKERFILE="$OPTARG" ;; # -i 参数赋值给 DOCKERFILE 变量
     v) VERSION="$OPTARG" ;;    # -v 参数赋值给 VERSION 变量
@@ -33,12 +33,16 @@ while getopts "i:v:K:L:B:P:a:b:c:d:e:f:g:h:n:S:t:u:A:" opt; do
     S) ENABLE_systemd257="$OPTARG" ;; # systemd 257 旧内核兼容
     t) ENABLE_8gen2_wayland="$OPTARG" ;; # 修复骁龙8 Gen 2 Wayland 花屏
     u) USERNAME="$OPTARG" ;; # 自定义用户名
+    H) HOSTNAME="$OPTARG" ;; # 自定义主机名
+    p) USER_PASSWORD="$OPTARG" ;; # 自定义用户密码
     A) LEGACY_ANLAND_INPUT="$OPTARG" ;; # 兼容旧参数
     *) echo "用法: $0 -i <template.Dockerfile> -K <none|KDE|'KDE mobile'|GNOME> [-B <x11|anland-wayland>]" ; exit 1 ;;
   esac
 done
 
-: "${USERNAME:=Gold}"
+: "${USERNAME:=nepo}"
+: "${HOSTNAME:=onyx}"
+: "${USER_PASSWORD:=}"
 : "${ANLAND_RELEASE_REPOSITORY:=Goldzxcbug/droidspaces-package}"
 : "${ANLAND_PACKAGE_REVISION:=}"
 
@@ -197,6 +201,8 @@ docker buildx build \
   --build-arg ANLAND_RELEASE_REPOSITORY="$ANLAND_RELEASE_REPOSITORY" \
   --build-arg ANLAND_PACKAGE_REVISION="$ANLAND_PACKAGE_REVISION" \
   --build-arg USERNAME="$USERNAME" \
+  --build-arg USER_PASSWORD="$USER_PASSWORD" \
+  --build-arg HOSTNAME="$HOSTNAME" \
   -f "$DOCKERFILE" \
   .
 

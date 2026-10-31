@@ -15,7 +15,9 @@ ARG ENABLE_zip_ARG
 ARG ENABLE_docker_ARG
 ARG ENABLE_srf_ARG
 ARG ENABLE_systemd257_ARG
-ARG USERNAME
+ARG USERNAME=nepo
+ARG USER_PASSWORD
+ARG HOSTNAME=onyx
 ARG ANLAND_RELEASE_REPOSITORY=Goldzxcbug/droidspaces-package
 ARG ANLAND_PACKAGE_REVISION=unknown
 ######################################################
@@ -117,8 +119,13 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     # 如果容器内存在默认的 alarm 或 arch 用户，则清理
     (userdel -r alarm 2>/dev/null || true) && \
-    useradd -m -s /bin/bash ${USERNAME} && echo "${USERNAME}:1234" | chpasswd && \
+    useradd -m -s /bin/bash ${USERNAME} && \
+    ( [ -n "$USER_PASSWORD" ] && printf '%s:%s\n' "${USERNAME}" "${USER_PASSWORD}" | chpasswd || echo "${USERNAME}:1234" | chpasswd ) && \
     systemctl enable sshd
+
+# 设置设备主机名
+RUN echo "${HOSTNAME:-onyx}" > /etc/hostname && \
+    printf '127.0.0.1 localhost\n127.0.1.1 %s\n::1 localhost ip6-localhost ip6-loopback\n' "${HOSTNAME:-onyx}" > /etc/hosts
 
 # 为所有 Arch RootFS 安装 Droidspaces USB Manager
 RUN /usr/local/sbin/install-droidspaces-usb-manager --user "${USERNAME}"

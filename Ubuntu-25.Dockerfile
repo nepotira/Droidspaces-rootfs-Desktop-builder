@@ -15,7 +15,9 @@ ARG ENABLE_docker_ARG
 ARG ENABLE_srf_ARG
 ARG ENABLE_nosnap_ARG
 ARG ENABLE_systemd257_ARG
-ARG USERNAME
+ARG USERNAME=nepo
+ARG USER_PASSWORD
+ARG HOSTNAME=onyx
 ######################################################
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -141,8 +143,13 @@ RUN sed -i '/en_US.UTF-8/s/^# //' /etc/locale.gen && \
     # Ubuntu 默认用户是 ubuntu，删除它避免冲突
     (deluser --remove-home ubuntu || true) && \
     # 创建自定义用户并直接加入 shadow 组，确保锁屏验证权限
-    useradd -m -s /bin/bash -G shadow ${USERNAME} && echo "${USERNAME}:1234" | chpasswd && \
+    useradd -m -s /bin/bash -G shadow ${USERNAME} && \
+    ( [ -n "$USER_PASSWORD" ] && printf '%s:%s\n' "${USERNAME}" "${USER_PASSWORD}" | chpasswd || echo "${USERNAME}:1234" | chpasswd ) && \
     systemctl enable ssh
+
+# 设置设备主机名
+RUN echo "${HOSTNAME:-onyx}" > /etc/hostname && \
+    printf '127.0.0.1 localhost\n127.0.1.1 %s\n::1 localhost ip6-localhost ip6-loopback\n' "${HOSTNAME:-onyx}" > /etc/hosts
 
 # 为所有 Ubuntu RootFS 安装 Droidspaces USB Manager
 RUN /usr/local/sbin/install-droidspaces-usb-manager --user "${USERNAME}"

@@ -20,6 +20,9 @@ configure_environment() {
         ANLAND=1
         ANLAND_SOCKET=/run/display.sock
         ANLAND_DRM_DEVICE=/dev/dri/renderD128
+        ANLAND_SKIP_IMPLICIT_SYNC_WAIT=1
+        XWAYLAND_GBM_DEVICE=/dev/dri/renderD128
+        MESA_VK_DEVICE_SELECT_FORCE_DEFAULT_DEVICE=1
     )
 
     [[ "$backend" == anland-wayland ]] || {
@@ -42,7 +45,7 @@ install_apt() {
         gnome-terminal gnome-text-editor nautilus gnome-system-monitor gnome-tweaks
         gnome-keyring libpam-gnome-keyring polkitd upower
         pipewire pipewire-alsa pipewire-pulse wireplumber pulseaudio-utils
-        mesa-utils vulkan-tools aha clinfo dmidecode glmark2 vkmark
+        mesa-utils mesa-utils-bin vulkan-tools aha clinfo dmidecode glmark2 vkmark
         wayland-utils xwayland xdg-user-dirs xdg-desktop-portal-gnome xdg-desktop-portal-gtk
         file-roller evince eog gnome-calculator gnome-disk-utility
         gstreamer1.0-plugins-base gstreamer1.0-plugins-good
@@ -68,9 +71,31 @@ install_apt() {
 
     apt-get install -y --no-install-recommends "${packages[@]}"
 
-    if [[ "$ID:$VERSION_ID" == debian:13 ]]; then
-        systemctl --root=/ disable gdm3.service display-manager.service
-        systemctl --root=/ mask gdm3.service display-manager.service
+    systemctl --root="${ROOTFS_DIR:-/}" disable gdm3.service display-manager.service 2>/dev/null || true
+    systemctl --root="${ROOTFS_DIR:-/}" mask gdm3.service display-manager.service 2>/dev/null || true
+}
+
+configure_gnome_overrides() {
+    local schema_dir="${ROOTFS_DIR:-}/usr/share/glib-2.0/schemas"
+    if [[ -d "$schema_dir" ]]; then
+        cat > "$schema_dir/99_droidspaces_gnome.gschema.override" <<'EOF'
+[org.gnome.desktop.session]
+idle-delay=uint32 0
+
+[org.gnome.settings-daemon.plugins.power]
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+idle-dim=false
+
+[org.gnome.desktop.screensaver]
+lock-enabled=false
+
+[org.gnome.desktop.lockdown]
+disable-lock-screen=true
+EOF
+        if command -v glib-compile-schemas >/dev/null 2>&1; then
+            glib-compile-schemas "$schema_dir" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -94,6 +119,7 @@ install_profile() {
         arch|archarm|archlinux) install_arch ;;
         *) echo "GNOME 不支持当前发行版：$ID" >&2; return 1 ;;
     esac
+    configure_gnome_overrides
 }
 
 install_fedora() {

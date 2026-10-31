@@ -127,16 +127,62 @@ cat > "$wrapper" <<'EOF'
 #!/bin/sh
 set -eu
 
+# Allow user custom flags via ~/.config/chrome-flags.conf or /etc/chrome-flags.conf
+EXTRA_FLAGS=""
+if [ -n "${HOME:-}" ] && [ -r "${HOME}/.config/chrome-flags.conf" ]; then
+    EXTRA_FLAGS="$(grep -v '^[[:space:]]*#' "${HOME}/.config/chrome-flags.conf" | tr '\n' ' ')"
+elif [ -r /etc/chrome-flags.conf ]; then
+    EXTRA_FLAGS="$(grep -v '^[[:space:]]*#' /etc/chrome-flags.conf | tr '\n' ' ')"
+fi
+
+DEFAULT_FLAGS="--ozone-platform=wayland --render-node-override=/dev/dri/renderD128 --ignore-gpu-blocklist"
+
+# Check if software/no-gpu rendering is requested via env or CLI
+DISABLE_GPU=0
+if [ "${CHROME_DISABLE_GPU:-0}" = "1" ]; then
+    DISABLE_GPU=1
+fi
+for arg in "$@"; do
+    case "$arg" in
+        --disable-gpu) DISABLE_GPU=1 ;;
+    esac
+done
+
+if [ "$DISABLE_GPU" = "1" ]; then
+    exec /opt/google/chrome/google-chrome \
+        $DEFAULT_FLAGS \
+        --disable-gpu \
+        $EXTRA_FLAGS \
+        "$@"
+fi
+
 exec /opt/google/chrome/google-chrome \
-    --ozone-platform=wayland \
-    --render-node-override=/dev/dri/renderD128 \
-    --ignore-gpu-blocklist \
+    $DEFAULT_FLAGS \
     --use-angle=vulkan \
     --enable-features=VaapiVideoDecodeLinux,VaapiVideoDecoder,VaapiVideoDecodeLinuxGL \
+    $EXTRA_FLAGS \
     "$@"
 EOF
 chmod 0755 "$wrapper"
 ln -sfn -- google-chrome "${wrapper_dir}/google-chrome-stable"
+
+safe_desktop="${rootfs}/usr/share/applications/google-chrome-safe.desktop"
+install -d -m 0755 "$(dirname "$safe_desktop")"
+cat > "$safe_desktop" <<'EOF'
+[Desktop Entry]
+Version=1.0
+Name=Google Chrome (Safe Mode)
+GenericName=Web Browser
+Comment=Access the Internet with GPU acceleration disabled
+Exec=/usr/local/bin/google-chrome --disable-gpu %U
+Terminal=false
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml_xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+EOF
+chmod 0644 "$safe_desktop"
 
 for desktop_file in \
     "${rootfs}/usr/share/applications/google-chrome.desktop" \
