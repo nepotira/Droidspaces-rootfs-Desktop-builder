@@ -31,4 +31,12 @@ if [[ "${DROIDSPACES_SESSION_DRY_RUN:-false}" == true ]]; then
     exit 0
 fi
 
+if [[ "${DISPLAY_BACKEND:-}" == "anland-wayland" ]]; then
+    socket_path="${ANLAND_SOCKET:-/run/display.sock}"
+    for i in $(seq 1 20); do
+        [[ -S "$socket_path" ]] && break
+        sleep 0.5
+    done
+fi
+
 exec /bin/bash -lc "$command_line"

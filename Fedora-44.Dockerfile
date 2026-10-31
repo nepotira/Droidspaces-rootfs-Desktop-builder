@@ -15,7 +15,9 @@ ARG ENABLE_srf_ARG
 ARG DISPLAY_BACKEND
 ARG ENABLE_8gen2_wayland_ARG
 ARG ENABLE_systemd257_ARG
-ARG USERNAME
+ARG USERNAME=nepo
+ARG USER_PASSWORD
+ARG HOSTNAME=onyx
 ARG ANLAND_RELEASE_REPOSITORY=Goldzxcbug/droidspaces-package
 ARG ANLAND_PACKAGE_REVISION=unknown
 ######################################################
@@ -127,7 +129,12 @@ RUN if [ "$ENABLE_zh_tz_ARG" = "true" ]; then \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     # 删除默认可能存在的用户并创建新用户
     (userdel -r debian 2>/dev/null || true) && \
-    useradd -m -s /bin/bash ${USERNAME} && echo "${USERNAME}:1234" | chpasswd
+    useradd -m -s /bin/bash ${USERNAME} && \
+    ( [ -n "$USER_PASSWORD" ] && printf '%s:%s\n' "${USERNAME}" "${USER_PASSWORD}" | chpasswd || echo "${USERNAME}:1234" | chpasswd )
+
+# 设置设备主机名
+RUN echo "${HOSTNAME:-onyx}" > /etc/hostname && \
+    printf '127.0.0.1 localhost\n127.0.1.1 %s\n::1 localhost ip6-localhost ip6-loopback\n' "${HOSTNAME:-onyx}" > /etc/hosts
 
 # 为所有 Fedora RootFS 安装 Droidspaces USB Manager
 RUN /usr/local/sbin/install-droidspaces-usb-manager --user "${USERNAME}"
