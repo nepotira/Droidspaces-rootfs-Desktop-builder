@@ -1,9 +1,12 @@
 # Handoff: Droidspaces RootFS for Poco F7 (onyx)
 
-## Summary of Changes
-- Branch: `feat/onyx-rootfs-turnip-gnome-fixes`
-- Pull Request / Push: Changes committed following Conventional Commits format.
-- GitHub Secret: `ROOTFS_PASSWORD` configured in `nepotira/Droidspaces-rootfs-Desktop-builder`.
-- Next Actions:
-  - Run the workflow `Build and Release Droidspaces RootFS` using GitHub Actions (via `gh workflow run` or Web UI).
-  - Test on the Poco F7 ("onyx") device under Anland.
+## Ongoing Build
+- Run ID: 41250153215
+- Workflow URL: https://github.com/nepotira/Droidspaces-rootfs-Desktop-builder/actions/runs/41250153215
+- Target: Ubuntu-26 / GNOME / Anland Wayland
+- Device: Poco F7 (onyx)
+
+## Artifact & Flashing
+- Once the Actions build completes (~10-15 minutes), the RootFS artifact `.tar.xz` will be available in the workflow run / GitHub Releases.
+- User can install the RootFS in Droidspaces and connect via Anland.
+- User: `nepo` (initial password `1234`, change to `pedroca` via `passwd nepo` inside the container).
